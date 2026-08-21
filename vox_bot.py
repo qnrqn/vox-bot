@@ -167,8 +167,8 @@ async def on_message(message):
   if message.author.bot:
     return
 
-  # '티비할배'로 시작하는 호출 응답
-    if "티비할배" in message.content:
+  # 문장 어디에든 '티비할배'라는 키워드가 있으면 바로 반응
+  if "티비할배" in message.content:
     reply = random.choice(CALL_RESPONSES)
     await message.channel.send(reply)
     return
