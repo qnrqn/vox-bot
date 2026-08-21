@@ -7,12 +7,11 @@ from discord.ext import commands, tasks
 intents = discord.Intents.default()
 intents.message_content = True
 
-# '티비할배 '로 시작하는 모든 메시지 감지
 bot = commands.Bot(command_prefix="티비할배 ", intents=intents)
 
 # ==================== [채널 ID 설정] ====================
-MEAL_CHANNEL_ID = 123456789012345678  # 식단 인증 채널 ID
-NAG_CHANNEL_ID = 876543210987654321  # 잔소리 채널 ID
+MEAL_CHANNEL_ID = 1540214199853260900  # 식단 인증 채널 ID (포럼 채널)
+NAG_CHANNEL_ID = 1540247977979809854  # 잔소리 채널 ID
 # ========================================================
 
 # 귀찮아하는 툭툭 던지는 호출 응답 대사 (20개)
@@ -104,7 +103,7 @@ async def on_ready():
 
 
 # ---------------------------------------------------------
-# [기능 1] 식사 인증 스레드 자동 생성
+# [기능 1] 식사 인증 포럼 포스트 자동 생성 (포럼 채널 전용)
 # ---------------------------------------------------------
 @tasks.loop(minutes=1)
 async def meal_check_loop():
@@ -116,20 +115,33 @@ async def meal_check_loop():
   if not channel:
     return
 
+  # 포럼 채널인지 일반 채널인지에 따라 전송 방식 자동 분기
+  async def send_meal_notice(title, quote):
+    if isinstance(channel, discord.ForumChannel):
+      # 포럼 채널일 경우: 새 포스트(스레드) 바로 생성
+      await channel.create_thread(
+          name=title, content=f"**[VoxTek] {today}**\n{quote}"
+      )
+    else:
+      # 일반 텍스트 채널일 경우: 메시지 전송 후 하위 스레드 생성
+      msg = await channel.send(f"**[VoxTek] {today}**\n{quote}")
+      await msg.create_thread(name=title)
+
+  # 시간대별 알림
   if time_str == "06:00":
-    quote = random.choice(MORNING_QUOTES)
-    msg = await channel.send(f"**[VoxTek] {today} 아침!**\n{quote}")
-    await msg.create_thread(name=f"📺 {today} 아침 식단 스레드")
+    await send_meal_notice(
+        f"📺 {today} 아침 식단 포스트", random.choice(MORNING_QUOTES)
+    )
 
   elif time_str == "11:30":
-    quote = random.choice(LUNCH_QUOTES)
-    msg = await channel.send(f"**[VoxTek] {today} 점심!**\n{quote}")
-    await msg.create_thread(name=f"📺 {today} 점심 식단 스레드")
+    await send_meal_notice(
+        f"📺 {today} 점심 식단 포스트", random.choice(LUNCH_QUOTES)
+    )
 
   elif time_str == "18:00":
-    quote = random.choice(DINNER_QUOTES)
-    msg = await channel.send(f"**[VoxTek] {today} 저녁!**\n{quote}")
-    await msg.create_thread(name=f"📺 {today} 저녁 식단 스레드")
+    await send_meal_notice(
+        f"📺 {today} 저녁 식단 포스트", random.choice(DINNER_QUOTES)
+    )
 
 
 # ---------------------------------------------------------
@@ -148,31 +160,32 @@ async def random_event_loop():
 
 
 # ---------------------------------------------------------
-# [기능 3] 스레드/채널 감시 및 "티비할배" 호출 처리
+# [기능 3] 포럼 포스트/채널 감시 및 "티비할배" 호출 처리
 # ---------------------------------------------------------
 @bot.event
 async def on_message(message):
   if message.author.bot:
     return
 
-  # '티비할배'라고 물어보면 뭐라고 치든 귀찮아하는 대사 20개 중 랜덤 출력
+  # '티비할배'로 시작하는 호출 응답
   if message.content.startswith("티비할배"):
     reply = random.choice(CALL_RESPONSES)
     await message.channel.send(reply)
     return
 
+  # 메시지가 포럼 본문이거나 포럼 안의 답글인지 확인
   is_target_channel = message.channel.id == MEAL_CHANNEL_ID
   is_target_thread = (
       getattr(message.channel, "parent_id", None) == MEAL_CHANNEL_ID
   )
 
   if is_target_channel or is_target_thread:
-    # 사진 있음 -> 따봉 반응
+    # 사진이 첨부되어 있으면 반응 달기
     if message.attachments:
       await message.add_reaction("👍")
       await message.add_reaction("📺")
 
-    # 사진 없음 -> 경고 (4글자)
+    # 사진이 없으면 경고 후 5초 뒤 자동 삭제
     elif not message.attachments:
       await message.channel.send(
           f"{message.author.mention} 사진올려.", delete_after=5
