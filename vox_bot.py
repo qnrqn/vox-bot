@@ -168,7 +168,7 @@ async def on_message(message):
     return
 
   # 문장 어디에든 '티비할배'라는 키워드가 있으면 바로 반응
-  if "티비할배" in message.content or "복스" in message.content:
+  if "티비할배" in message.content or "복스" in message.content or "재희남친" in message.content or "재희 남친" in message.content:
       reply = random.choice(CALL_RESPONSES)
       await message.channel.send(reply)
       return
