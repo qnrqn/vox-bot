@@ -168,7 +168,7 @@ async def on_message(message):
     return
 
   # '티비할배'로 시작하는 호출 응답
-  if message.content.startswith("티비할배"):
+    if "티비할배" in message.content:
     reply = random.choice(CALL_RESPONSES)
     await message.channel.send(reply)
     return
