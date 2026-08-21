@@ -168,10 +168,10 @@ async def on_message(message):
     return
 
   # 문장 어디에든 '티비할배'라는 키워드가 있으면 바로 반응
-  if "티비할배" in message.content:
-    reply = random.choice(CALL_RESPONSES)
-    await message.channel.send(reply)
-    return
+  if "티비할배" in message.content or "복스" in message.content:
+      reply = random.choice(CALL_RESPONSES)
+      await message.channel.send(reply)
+      return
 
   # 메시지가 포럼 본문이거나 포럼 안의 답글인지 확인
   is_target_channel = message.channel.id == MEAL_CHANNEL_ID
@@ -187,9 +187,7 @@ async def on_message(message):
 
     # 사진이 없으면 경고 후 5초 뒤 자동 삭제
     elif not message.attachments:
-      await message.channel.send(
-          f"{message.author.mention} 사진올려.", delete_after=5
-      )
+        await message.channel.send(f"{message.author.mention} 사진올려.")
 
   await bot.process_commands(message)
 
